@@ -8,13 +8,13 @@
   --background-end-rgb: 255, 255, 255;
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
     --background-start-rgb: 40, 40, 40;
     --background-end-rgb: 10, 10, 10;
   }
-}
+} */
 
 body {
   color: rgb(var(--foreground-rgb));
@@ -31,3 +31,20 @@ body {
     text-wrap: balance;
   }
 }
+
+.settings {
+  position: absolute;
+  width: 100%;
+  height: 100px;
+}
+
+canvas {
+  position: absolute;
+}
+
+/* .navbar{
+  color: white;
+  background-color: blue;
+  padding:2px;
+  margin:20px;
+} */
