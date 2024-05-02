@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@loadable/component": "^5.16.4",
+    "@types/gun": "^0.9.6",
+    "gun": "^0.2020.1240",
     "next": "14.2.3",
     "react": "^18",
     "react-dom": "^18",

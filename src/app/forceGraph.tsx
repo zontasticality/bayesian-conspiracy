@@ -32,8 +32,15 @@ interface GraphSettings {
 function default_graph_settings(): GraphSettings {
 	return { focusMode: false }
 }
+// gun db
+// 'graph' key is main space
+// 'node' -> link to each node
+//		node contains set of incoming and outgoing links
+// 'links' set of links, each link contains
+//		'source' - link to node
+//		'target' - link to node
 
-const CustomFocusGraph = ({ settings }: { settings: GraphSettings }) => {
+const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any }) => {
 	const fgRef = useRef<ForceGraphMethods<Node, Link>>();
 
 	const json_node_map = new Map<string, Node>(jsondata.nodes.map(o => [o.id, o]))
@@ -58,7 +65,7 @@ const CustomFocusGraph = ({ settings }: { settings: GraphSettings }) => {
 					if (selectedNode !== undefined) {
 						const { nodes, links } = data;
 						// remove selected node and relevant links from graph
-						const newLinks = links.filter(l => !(l.source === selectedNode || l.target === selectedNode)); // Remove links attached to node
+						const newLinks = links.filter(l => !(l.source.id === selectedNode || l.target.id === selectedNode)); // Remove links attached to node
 						const newNodes = nodes.filter((val) => val.id !== selectedNode);
 						console.log(newLinks);
 						console.log(links);
@@ -68,6 +75,7 @@ const CustomFocusGraph = ({ settings }: { settings: GraphSettings }) => {
 					break;
 				case "r":
 					fgRef.current?.d3ReheatSimulation();
+				// if (selectedNode) { fgRef.current?.centerAt(); }
 				default:
 					console.log(`Key pressed: ${event.key}`);
 					break;
