@@ -26,7 +26,14 @@ interface Link {
 	value: string,
 }
 
-const CustomFocusGraph = () => {
+interface GraphSettings {
+	focusMode: boolean
+}
+function default_graph_settings(): GraphSettings {
+	return { focusMode: false }
+}
+
+const CustomFocusGraph = ({ settings }: { settings: GraphSettings }) => {
 	const fgRef = useRef<ForceGraphMethods<Node, Link>>();
 
 	const json_node_map = new Map<string, Node>(jsondata.nodes.map(o => [o.id, o]))
@@ -100,8 +107,7 @@ const CustomFocusGraph = () => {
 		console.log(newFocusedNodes, newFocusedLinks, newSelectedNode);
 	}, [setSelectedNode, setFocusedNodes, setFocusedLinks, data]);
 
-	const GROUPS = 12;
-
+	const nodeRelSize = 4;
 	return (
 		<ForceGraph
 			ref={fgRef}
@@ -109,39 +115,36 @@ const CustomFocusGraph = () => {
 			nodeId="id"
 			nodeLabel="id"
 			onNodeClick={nodeClickCallback}
-			// nodeAutoColorBy="group"
+			nodeAutoColorBy="group"
+			nodeRelSize={nodeRelSize}
 			nodeCanvasObjectMode={() => "after"}
-			/* nodeColor={(node: NodeObject<Node>) => {
-				node.group
-			}} */
 			nodeCanvasObject={(node, ctx, globalScale) => {
 				const label = node.id as string; // node label
 				const fontSize = 20 / globalScale; // scale with zoom
 
 				ctx.font = `${fontSize}px Sans-Serif`; // set font
 				const textWidth = ctx.measureText(label).width;
-				// ctx.fillRect(node.x! - bckgDimensions[0] / 2, node.y! - bckgDimensions[1] / 2, bckgDimensions[0], bckgDimensions[1]);
 
 				const nodeColor = 'rgb(100, 100, 100)';
-
-				// draw circle
-				ctx.beginPath();
-				ctx.arc(node.x!, node.y!, fontSize, 0, 2 * Math.PI);
-				// render stroke and fill
-				ctx.strokeStyle = nodeColor;
-				// selected node set stroke
-				if (node.id == selectedNode) {
-					ctx.strokeStyle = 'rgb(255,255,0)';
-				}
-				ctx.stroke();
-				ctx.fillStyle = nodeColor;
-				ctx.fill();
 
 				if (focusedNodes.has(node)) {
 					ctx.textAlign = 'center';
 					ctx.textBaseline = 'middle';
 					ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
 					ctx.fillText(label, node.x!, node.y! + fontSize * 2);
+				} else if (settings.focusMode) {
+					// draw circle
+					ctx.beginPath();
+					ctx.arc(node.x!, node.y!, nodeRelSize, 0, 2 * Math.PI);
+					// render stroke and fill
+					ctx.strokeStyle = nodeColor;
+					// selected node set stroke
+					if (node.id == selectedNode) {
+						ctx.strokeStyle = 'rgb(255,255,0)';
+					}
+					ctx.stroke();
+					ctx.fillStyle = nodeColor;
+					ctx.fill();
 				}
 			}}
 			linkDirectionalArrowLength={3}
@@ -161,9 +164,10 @@ const CustomFocusGraph = () => {
 					if (typeof start !== 'object' || typeof end !== 'object') return;
 
 					// calculate label positioning
-					const textPos = Object.assign(...['x', 'y'].map(c => ({
-						[c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
-					})));
+					const textPos = ['x', 'y'].reduce((acc, key) => {
+						acc[key] = start[key] + (end[key] - start[key]) / 2;
+						return acc;
+					}, {} as Record<string, number>);
 
 					const relLink = { x: end.x! - start.x!, y: end.y! - start.y! };
 
