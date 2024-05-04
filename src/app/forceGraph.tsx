@@ -5,11 +5,11 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import ForceGraph, { ForceGraphMethods, GraphData, LinkObject, NodeObject } from "react-force-graph-2d";
 import Popup from "reactjs-popup";
 // import jsondata from "./miserables.json";
+require('gun/lib/unset')
 
 interface Node {
-	id: string,
-	name: string,
-	group: number
+	id: string, // gundb uniq soul
+	name: string, // name
 }
 interface Link {
 	source: NodeObject<Node>,
@@ -39,11 +39,19 @@ function default_graph_settings(): GraphSettings {
 const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any }) => {
 	const fgRef = useRef<ForceGraphMethods<Node, Link>>();
 
+	var graph = gun.get('graph');
+
 	const [data, setData] = useState<GraphData<NodeObject<Node>, LinkObject<Node, Link>>>(() => {
-		let start = gun.get('graph').get('nodes').get('start').put({ name: "Start" });
+		// initial gun setup
+		const nodes = graph.get('nodes');
+		nodes.once().map().once(node => {
+			node.put(null); // unset all nodes
+		})
+		// add start node
+		// let start = graph.get('nodes').set({ name: "Start" }); // add start item to node array
 		// let links = start.get('incoming');
 		return {
-			nodes: [{ id: 'start', name: "Start", group: 1 }],
+			nodes: [],
 			links: []
 		};
 	// get start node from gundb if exists
@@ -56,6 +64,31 @@ const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any
 			value: l.value
 		})) */
 	});
+
+	// gundb setup node & link setState hooks
+	useEffect(() => {
+		const nodes = graph.get('nodes');
+
+		console.log("updating data:", data);
+		// check all nodes in db graph 
+		nodes.map().on((node: any, id: any) => {
+			setData(data => {
+				console.log("iterating db nodes w/ id", id, "node:", node);
+				let found_idx = data.nodes.findIndex((i) => i.id === id);
+				// if node doesn't exist, delete from node array
+				if (node === undefined) { data.nodes.splice(found_idx); return data; }
+				// if node in graph matching thing, update it.
+				if (found_idx !== -1) {
+					data.nodes[found_idx].name = node.name;
+				} else { // otherwise add new node
+					data.nodes.push({ id: id, name: node.name });
+				}
+				console.log("data", data);
+				return data;
+			})
+		})
+	}, [data, graph])
+
 	const [selectedNode, setSelectedNode] = useState<string | undefined>(undefined);
 	const [focusedNodes, setFocusedNodes] = useState<Set<NodeObject<Node>>>(new Set());
 	const [focusedLinks, setFocusedLinks] = useState<Set<LinkObject<Node, Link>>>(new Set());
@@ -65,7 +98,7 @@ const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any
 	function addNode(formData: any) {
 		const nodeName = formData.get("name");
 		setNodePopupOpen(false);
-		// data.nodes.a
+		graph.get('nodes').set({ name: nodeName });
 		console.log("adding:", nodeName);
 	}
 
@@ -157,7 +190,7 @@ const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any
 			nodeId="id"
 			nodeLabel="id"
 			onNodeClick={nodeClickCallback}
-			nodeAutoColorBy="group"
+				nodeAutoColorBy="name"
 			nodeRelSize={nodeRelSize}
 			nodeCanvasObjectMode={() => "after"}
 			nodeCanvasObject={(node, ctx, globalScale) => {
