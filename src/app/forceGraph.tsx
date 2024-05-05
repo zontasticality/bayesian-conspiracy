@@ -42,20 +42,10 @@ const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any
 	var graph = gun.get('graph');
 
 	const [data, setData] = useState<GraphData<NodeObject<Node>, LinkObject<Node, Link>>>(() => {
-		// initial gun setup
-		const nodes = graph.get('nodes');
-		nodes.once().map().once(node => {
-			node.put(null); // unset all nodes
-		})
-		// add start node
-		// let start = graph.get('nodes').set({ name: "Start" }); // add start item to node array
-		// let links = start.get('incoming');
 		return {
 			nodes: [],
 			links: []
 		};
-	// get start node from gundb if exists
-	// get neighboring nodes
 	//
 		/* nodes: jsondata.nodes,
 		links: jsondata.links.map(l => ({
@@ -68,25 +58,37 @@ const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any
 	// gundb setup node & link setState hooks
 	useEffect(() => {
 		const nodes = graph.get('nodes');
+		window.graph = graph;
+		window.nodes = nodes;
+		// initial gun setup
+		/* nodes.once().map().once((node: any) => {
+			console.log("deleting node:", node);
+			node.put(null); // unset all nodes
+		}) */
 
-		console.log("updating data:", data);
-		// check all nodes in db graph 
+		console.log("initializing db listeners...");
+		var num_ups = 0;
 		nodes.map().on((node: any, id: any) => {
 			setData(data => {
-				console.log("iterating db nodes w/ id", id, "node:", node);
+				num_ups += 1;
+				// check if already exists
 				let found_idx = data.nodes.findIndex((i) => i.id === id);
-				// if node doesn't exist, delete from node array
-				if (node === undefined) { data.nodes.splice(found_idx); return data; }
-				// if node in graph matching thing, update it.
-				if (found_idx !== -1) {
-					data.nodes[found_idx].name = node.name;
-				} else { // otherwise add new node
+
+				if (found_idx === -1) {
+					console.log("found node not added:", id, "node:", node, "idx:", found_idx, num_ups);
+					if (node === undefined) { return data; }
 					data.nodes.push({ id: id, name: node.name });
+				} else {
+					console.log("updating: ", data.nodes[found_idx], node, num_ups);
+					data.nodes[found_idx].name = node.name; // update data
 				}
-				console.log("data", data);
 				return data;
 			})
-		})
+		}, true)
+		return () => {
+			nodes.map().off()
+			console.log("closing listeners..., ups:", num_ups);
+		}
 	}, [data, graph])
 
 	const [selectedNode, setSelectedNode] = useState<string | undefined>(undefined);
@@ -188,11 +190,14 @@ const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any
 			ref={fgRef}
 			graphData={data}
 			nodeId="id"
-			nodeLabel="id"
+				nodeLabel="name"
 			onNodeClick={nodeClickCallback}
 				nodeAutoColorBy="name"
 			nodeRelSize={nodeRelSize}
-			nodeCanvasObjectMode={() => "after"}
+				nodeCanvasObjectMode={() => "after"}
+				onRenderFramePost={(ctx, globalScale) => {
+					// render line dragging
+				}}
 			nodeCanvasObject={(node, ctx, globalScale) => {
 				const label = node.name;
 				const fontSize = 20 / globalScale; // scale with zoom
