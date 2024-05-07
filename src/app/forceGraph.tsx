@@ -104,6 +104,8 @@ const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any
 		console.log("adding:", nodeName);
 	}
 
+	const [isLinking, setIsLinking] = useState(false);
+
 	const [nodePopupOpen, setNodePopupOpen] = useState(false);
 	const [nodePopupPos, setNodePopupPos] = useState({ x: 0, y: 0 });
 	const closeNodePopup = () => setNodePopupOpen(false);
@@ -131,6 +133,12 @@ const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any
 				setNodePopupPos(localMouseCoords);
 			case "r":
 				fgRef.current?.d3ReheatSimulation();
+			case "l":
+				if (selectedNode !== undefined) {
+					setIsLinking(true);
+				} else {
+					console.log("cannot start linking, no selected node!");
+				}
 			// if (selectedNode) { fgRef.current?.centerAt(); }
 			default:
 				// console.log(`Key pressed: ${event.key}`);
@@ -196,7 +204,9 @@ const CustomFocusGraph = ({ settings, gun }: { settings: GraphSettings, gun: any
 			nodeRelSize={nodeRelSize}
 				nodeCanvasObjectMode={() => "after"}
 				onRenderFramePost={(ctx, globalScale) => {
-					// render line dragging
+					if (isLinking) {
+
+					}
 				}}
 			nodeCanvasObject={(node, ctx, globalScale) => {
 				const label = node.name;
